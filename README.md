@@ -66,10 +66,10 @@ In the end, a large value of λ will correspond to a large eigenvalue for ∑1 a
 
 ### Filter Bank CSP ###
 A way to apply the CSP idea to our multi-band data is to calculate the filters for each bandpass-filtered signal separately and then choose the best K filters. This is called the Filter Bank CSP (FBCSP) and it was first introduced [here](https://ieeexplore.ieee.org/document/4634130) by Ang et al. In my code, I followed closely the paper's implementation with one exception: Instead of using Mutual Information to choose the best filters, I used Linear Discriminant Analysis as it yielded much better results for this dataset. So let's try to apply this in 3-sec epochs and we can choose, for instance, 10Hz bands. Then we plot some of the best FBCSP features that allow us to discriminate between UP and DOWN trials:
-![fbcspplot](https://user-images.githubusercontent.com/40466329/51853332-f2719880-231f-11e9-8c41-9608ba7afcc2.jpg)
+![fbcspplot](https://user-images.githubusercontent.com/40466329/51855014-1fc04580-2324-11e9-9be2-4c185c0d02dc.jpg)
 
 Although we still have quite an overlap it is interesting that we can separate, even by inspection a considerable amount of UP and DOWN epochs only with 2 engineered features (in the case from bands 30-40Hz and 40-50Hz, both within the gamma range). This is quite remarkable, especially when we realize how similar the original distributions of the pre-FBCSP bands across all channels were for UP and DOWN trials:
-![varbands](https://user-images.githubusercontent.com/40466329/51853437-35cc0700-2320-11e9-92aa-ac5703bd458b.jpg)
+![varbands](https://user-images.githubusercontent.com/40466329/51855013-1fc04580-2324-11e9-941d-6066d8e15937.jpg)
 
 ## Optimizing bandwidths and multi-band CSP ##
 COMING SOON
