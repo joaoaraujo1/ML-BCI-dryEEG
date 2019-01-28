@@ -7,7 +7,7 @@ In this repository, I try to create the best classifier to decode user intention
 
 
 ## What data? Time-series plot and basic channel correlations ##
-Let's plot the 5-channel data of an entire UP and DOWN trial (with a bandpass filter of 1-80Hz and a notch filter at 50Hz to remove powerline noise), both of the same length to get an idea of the data we are working with:
+Let's plot the 5-channel data of an entire UP and DOWN trial (with a 4th order Butterworth bandpass filter of 1-80Hz and a notch filter at 50Hz to remove powerline noise), both of the same length to get an idea of the data we are working with:
 ![raw](https://user-images.githubusercontent.com/40466329/51772189-4b082200-20e3-11e9-827d-ba437542294a.jpg)
 
 By eye inspection, both trials look somewhat similar and the data is quite noisy. From this sample, Channel 3 appears to show the biggest waveform differences across trial types. Keep in mind that we need to make sure that such differences are generalized for the whole training dataset before choosing features based on this information. So now, with all the data, let's check the cross-correlation (Pearson's rho) of the channel signal and see if we get any interesting differences on these correlations across UP and DOWN trials:
@@ -24,7 +24,7 @@ It is relevant to note that beta (and mu) band is implicated in a special type o
 ![spectrogram](https://user-images.githubusercontent.com/40466329/51777062-709d2780-20f3-11e9-98d9-87bc0462f12e.jpg)
 ![fft](https://user-images.githubusercontent.com/40466329/51777079-80b50700-20f3-11e9-82ba-e6f35602b399.jpg)
 
-This time, it is a bit harder to get any intuition from the data: in some channels beta and gamma seem to slightly differ from trial types but it could simply be a coincidence. So next, I got the full dataset of every session, divided it in 3-second long epochs (with 2 seconds overlap) and calculated the difference (UP-DOWN) of the median logarithmized power spectral density across the 2 conditions for the 1-80 bandidth. I have done so separately for each session to have an idea how this difference would hold across different days. As the profile of each channel was very similar, I have chosen to only show one representative channel (Channel 4):
+This time, it is a bit harder to get any intuition from the data: in some channels beta and gamma seem to slightly differ from trial types but it could simply be a coincidence. So next, I got the full dataset of every session, divided it in 3-second long epochs (with 2 seconds overlap) and calculated the difference (UP-DOWN) of the median logarithmized power spectral density across the 2 conditions for the 1-80Hz bandidth. I have done so separately for each session to have an idea how this difference would hold across different days. As the profile of each channel was very similar, I have chosen to only show one representative channel (Channel 4):
 ![diffc4](https://user-images.githubusercontent.com/40466329/51777842-cde6a800-20f6-11e9-99b2-51bd6df1a13b.jpg)
 
 In the figure, the black line represents the median difference and the grey bands the standard deviation across different testing days (sessions). From this figure we can see that:
@@ -41,7 +41,27 @@ So now we have an idea of what are the main band power differences across the 2 
 
 ![banddiff](https://user-images.githubusercontent.com/40466329/51778569-57e44000-20fa-11e9-91a0-8d6638d071ff.jpg)
 
-Interestingly, this analysis does not show the discriminative power of Channel 3 anymore. On the other hand, Channels 1, 2 and 5 show cross-correlation changes up to **.33**. Channel 4 also shows some decent correlation changes of up to .24. So now we have gained some intuition about our data and about what possible features to feed to our classifier.
+Interestingly, this analysis does not show the discriminative power of Channel 3 anymore. On the other hand, Channels 2 and 5 show remarkable cross-correlation changes up to **.33**. Channel 4 also shows some decent correlation changes of up to .25 and Channel 1 has one correlation change of .30.
 
-## Improving band intervals and boosting discriminability with CSP ##
-<COMING SOON...>
+## Redefining band intervals and feature discriminability: Common Spatial Patterns ##
+Although the above mentioned bands are historically important for studying cognitive processes, it is not guaranteed that those specific bandwidth intervals are the best choice for filtering our signal on this specific task for this specific participant. In fact, part of our beta band (at ~20Hz) shows the inverse tendency of variation across trial types as the rest of the 12-30Hz interval. To further prove this point, let's just take Channel 1 from the ensemble, divide its signal in small bands of ~5Hz (16 bands for 1-80Hz signal) and plot the cross-correlation differences between UP and DOWN trials on its bands. As we can see, we can get higher cross-correlation differences:
+
+![fivehzdiff](https://user-images.githubusercontent.com/40466329/51811021-f7443700-22a2-11e9-95b1-2af500070240.jpg)
+
+However, if we stack a lot of these smaller band features, we end up with high-dimensional data (up to 400-dimensions if we use 1Hz bands from 1-80Hz across 5 channels). So it would be interesting if we could reduce the dimensionality of these data while maximizing the discriminability of the resulting features. Enter Common Spatial Patterns. CSP creates a set of spatial filters where we project our data to enhance discriminability between our two conditions by whitening and rotatating our data. Generally this is what it does:
+- We start with ∑1 and ∑2 that correspond to the covariance matrices of “up” and “down” epochs across our 5 channels.
+- Simultaneously diagonalize the 2 covariance matrices (real symmetric matrices) to get a common W: 
+
+  *WT ∑1 W = Λ1* and *WT ∑2 W = Λ2*
+  
+- The simultaneous decomposition ends up scaling W (the generalized eigenvectors) so that
+
+  *Λ1  +  Λ2  = I*
+
+- And so we verify the following:
+
+![image](https://user-images.githubusercontent.com/40466329/51809307-7895cc80-2297-11e9-85b1-cefddae57e8c.png)
+
+In the end, a large value of λ will correspond to a large eigenvalue for ∑1 and a small eigenvalue for ∑2. This means that a corresponding spatial filter that yields high variance for a condition will yield low variance for the other and vice-versa. Therefore, from the resulting W matrix, we take only the the first and last *n* filters (column vectors). To project the data into one of these spatial filters, we do matrix-vector multiplication between our filtered signal (dim: m X c) and the spatial filter (c X 1). In the end we end up with a new feature resulting on the weighted combination of the data of our 5 channels.
+
+### Filter Bank CSP ###
