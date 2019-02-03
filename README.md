@@ -1,5 +1,5 @@
 # Decoding user intention with dry-EEG data #
-In this repository, I try to create the best classifier to decode user intention from his dry-EEG data (5 channels) recorded while he performed a BCI task (controlling a ball to go UP or DOWN on a pc screen). The whole dataset consists of 5 BCI sessions of training data and a full 6th session of test data. With this code, you get an intuition on the data with visualization techniques, do some feature engineering and train a few classifiers for the best possible outcome. You can try to tweak several parameters and train several classifiers by changing the preferences in the main script header.
+In this repository, I try to create the best classifier to decode intention from a user's dry-EEG data (5 channels) recorded while he performed a BCI task (controlling a ball to go UP or DOWN on a pc screen with a fixed decoder) with a [Cognionics Quick20](https://www.cognionics.net/quick-20) headset. The whole dataset consists of 5 BCI sessions of training data and a full 6th session of test data. With this code, you get an intuition on the data with visualization techniques, do some feature engineering and get the chance to try a few classifiers to aim the best possible performance. You can try to tweak several parameters and train several classifiers by changing the preferences in the main script header.
 
 **Data**
 - *trialsUpN* - m1*c matrix where m1 is the number of datapoints recorded on session N while the participant was trying to move the ball upwards and c is the number of channels (5)
@@ -72,12 +72,24 @@ Although we still have quite an overlap it is interesting that we can separate, 
 ![varbands](https://user-images.githubusercontent.com/40466329/51855013-1fc04580-2324-11e9-941d-6066d8e15937.jpg)
 
 ## Optimizing bandwidths ##
-In the previous section, it was mentioned the problem of choosing bandwidths and how the standard bands may not be the best solution. In his [paper](https://ieeexplore.ieee.org/document/4408441), Blankertz created an heuristic based on channel psd cross-correlations to choose the best bandwidth for a motor-imagery dataset. In my case, I have also created an heuristic to do so, based on the power differences across bands. In short, the heuristic checks which bands yield the higher signal power differences across conditions in our training dataset and extends the interval until a criterion is met. This criterion can be defined as a maximum filter bandwidth or a threshold value of the difference between the 2 conditions. In this example, I did not set a limit to the filters bandwidth but the threshold value to stop increasing the filter width was: (PSD difference median) - (difference std across the 5 sessions) > 0. The plot below illustrates the filters limits for a channel:
+In the previous section, it was mentioned the problem of choosing bandwidths and how the standard bands may not be the best solution. In his [paper](https://ieeexplore.ieee.org/document/4408441), Blankertz created an heuristic based on channel psd cross-correlations to choose the best bandwidth for a motor-imagery dataset. In my case, I have also created an heuristic to do so, based on the power differences across bands. In short, the heuristic checks which bands yield the higher signal power differences across conditions in our training dataset and extends the interval until a criterion is met. This criterion can be defined as a maximum filter bandwidth or a threshold value of the difference between the 2 conditions. In this example, I did not set a limit to the filters bandwidth. However, I used the following threshold condition to stop increasing the filter width:
+
+*(PSD difference median) - (PSD difference standard deviation across the 5 sessions) > 0*
+
+The plot below illustrates the filters limits for a channel:
 
 ![heurfilters](https://user-images.githubusercontent.com/40466329/52028682-cb75bb00-2507-11e9-8cbf-ac4f4a60eeb4.jpg)
 
-Like before, black line represents the median PSD difference across conditions and the grey bands represent the difference standard deviation. The blue filter is the one where we expect the DOWN condition to have a higher value and the opposite happens with the red filters. This heuristic proved to be quite effective and below you can see how 2 features already show some discriminative power:
+Like before, the black line represents the median PSD difference across conditions and the grey bands represent the difference standard deviation. The blue filter is the one where we expect the DOWN condition to have a higher value and the opposite happens with the red filters. This heuristic proved to be quite effective and below you can see how 2 features already show some discriminative power:
 
 ![heuristicvar](https://user-images.githubusercontent.com/40466329/52029329-a2a2f500-250a-11e9-8142-daf622eee0b3.jpg)
 
 With this heuristic, a total of 44 log variance features were created and a classification accuracy of over **77%** on the test set was reached using a simple LDA classifier. When using a CSP method to increase discriminability (using all 44 filters), the performance increased to over **80%**.
+
+## Testing several classifiers ##
+After feature engineering it is time to try our classifiers and try to model our data in order to discriminate brain activity from UP and DOWN conditions. In this project you will be able to test and fine tune the following classifiers:
+- **LDA**
+- **SVM** (with linear and Gaussian kernels)
+- **Shallow Neural Networks** (with several activation functions, cross-validation, minimization functions)
+
+The vast majority of the classifier's code was written by me while completing Andew Ng's [Machine Learning](https://en.coursera.org/learn/machine-learning) and [Neural Networks and Deep Learning](https://en.coursera.org/learn/neural-networks-deep-learning?specialization=deep-learning) as well as [Christian Kothe's Introduction to Modern BCI Design](https://sccn.ucsd.edu/wiki/Introduction_To_Modern_Brain-Computer_Interface_Design) course. Can you create a model that performs above 80% accuracy in 3second epochs (1500 samples) or less?
