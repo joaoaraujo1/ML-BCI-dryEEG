@@ -1,5 +1,9 @@
 # Decoding user intention with dry-EEG data #
-In this repository, I try to create the best classifier to decode intention from a user's dry-EEG data (5 channels) recorded while he performed a BCI task (controlling a ball to go UP or DOWN on a pc screen with a fixed decoder) with a [Cognionics Quick20](https://www.cognionics.net/quick-20) headset. The whole dataset consists of 5 BCI sessions of training data and a full 6th session of test data. With this code, you get an intuition on the data with visualization techniques, do some feature engineering and get the chance to try a few classifiers to aim the best possible performance. You can try to tweak several parameters and train several classifiers by changing the preferences in the main script header.
+In this repository, I try to create the best classifier to decode intention from a user's dry-EEG data (5 channels) recorded while he performed a BCI task (controlling a ball to go UP or DOWN with a fixed decoder) with a [Cognionics Quick20](https://www.cognionics.net/quick-20) headset. The ball game design is very similar to the app described in [mindX prototype](https://github.com/joaoaraujo1/mindX_prototype) but working on a PC screen:
+
+<img src="https://user-images.githubusercontent.com/40466329/51794147-626b0c00-21c4-11e9-8feb-3c5500efb203.png" alt="alt text" width="416" height="250"> <img src="https://user-images.githubusercontent.com/40466329/51794175-fb018c00-21c4-11e9-9cfc-10055ceefd69.gif" alt="alt text" width="416" height="125"> 
+
+The whole dataset consists of 5 BCI sessions of training data and a full 6th session of test data. With this code, you get an intuition on the data with visualization techniques, do some feature engineering and get the chance to try a few classifiers to aim the best possible performance. You can try to tweak several parameters and train several classifiers by changing the preferences in the main script header.
 
 **Data**
 - *trialsUpN* - m1*c matrix where m1 is the number of datapoints recorded on session N while the participant was trying to move the ball upwards and c is the number of channels (5)
