@@ -13,6 +13,12 @@ BW = Wo/20;
 X_up = [];
 X_down = [];
 
+% Optional Plots for data visualization
+if preferences.showPlots && length(trialsUp_len) > 30
+    plotTrialExample(trialsUp,trialsDown,trialsUp_len,trialsDown_len,preferences);
+    pause
+end
+
 % Heuristic-based filterband estimation
 if preferences.do_heuristic ~= 0 && isfield(preferences,'final_filters') == 0
     
@@ -23,12 +29,12 @@ if preferences.do_heuristic ~= 0 && isfield(preferences,'final_filters') == 0
         preferences.final_filters = heuristicFilterEstimation(preferences,trialsUp5,trialsDown5,trialsUp5_len,trialsDown5_len);
     
     elseif preferences.do_heuristic == 2
-        psd_ratio_all = heuristicFilterEstimation(preferences,trialsUp5,trialsDown5,trialsUp5_len,trialsDown5_len);
-%         filters_S2 = heuristicFilterEstimation(preferences,trialsUp2,trialsDown2,trialsUp2_len,trialsDown2_len);
-%         filters_S3 = heuristicFilterEstimation(preferences,trialsUp3,trialsDown3,trialsUp3_len,trialsDown3_len);
-%         filters_S4 = heuristicFilterEstimation(preferences,trialsUp4,trialsDown4,trialsUp4_len,trialsDown4_len);
-%         filters_S5 = heuristicFilterEstimation(preferences,trialsUp5,trialsDown5,trialsUp5_len,trialsDown5_len);
-%         psd_ratio_all = cat(3,filters_S1,filters_S2,filters_S3,filters_S4,filters_S5);
+        filters_S1 = heuristicFilterEstimation(preferences,trialsUp1,trialsDown1,trialsUp1_len,trialsDown1_len);
+        filters_S2 = heuristicFilterEstimation(preferences,trialsUp2,trialsDown2,trialsUp2_len,trialsDown2_len);
+        filters_S3 = heuristicFilterEstimation(preferences,trialsUp3,trialsDown3,trialsUp3_len,trialsDown3_len);
+        filters_S4 = heuristicFilterEstimation(preferences,trialsUp4,trialsDown4,trialsUp4_len,trialsDown4_len);
+        filters_S5 = heuristicFilterEstimation(preferences,trialsUp5,trialsDown5,trialsUp5_len,trialsDown5_len);
+        psd_ratio_all = cat(3,filters_S1,filters_S2,filters_S3,filters_S4,filters_S5);
         preferences.final_filters = tailorBandsRatio(psd_ratio_all,preferences);
     end
 end
@@ -98,7 +104,7 @@ for dir = 1:2 %UP and DOWN trials
                     % from 125-250 Hz
                     for level = 2:preferences.dwt_level
                         if preferences.dwt_psd == 1
-                            [psd,~] = pwelch(D{level},[],[],[],preferences.Fs/(level+2));
+                            [psd,~] = pwelch(sqrt(D{level}),[],[],[],preferences.Fs/(level+2));
                             X_trial = [X_trial, log(mean(psd))];
                             
                         end
@@ -118,7 +124,7 @@ for dir = 1:2 %UP and DOWN trials
                     % We add the approximation coefficients information
                     A = appcoef(C,L,preferences.wname);
                     if preferences.dwt_psd == 1
-                        [psd,~] = pwelch(A,[],[],[],preferences.Fs/(level+2));
+                        [psd,~] = pwelch(sqrt(A),[],[],[],preferences.Fs/(level+2));
                         X_trial = [X_trial, log(mean(psd))];
                         
                     end
@@ -222,27 +228,29 @@ for dir = 1:2 %UP and DOWN trials
                 
                     bd_idx = 1;
 
-                    while(isnan(preferences.final_filters(ens,bd_idx)) == 0 && bd_idx < size(preferences.final_filters,2))
-
-                        [myButter.b, myButter.a] = butter(4, [preferences.final_filters(ens,bd_idx) preferences.final_filters(ens,bd_idx+1)]/Nyq,'bandpass');
-                        [myButter.d, myButter.c] = iirnotch(Wo,BW);
-                        filt_EEG = filtfilt(myButter.b, myButter.a, EEG(:,ens));
-                        filt_EEG = filter(myButter.d, myButter.c, filt_EEG);
-
-                        if preferences.center_epochs == 1
-                            filt_EEG = filt_EEG - repmat(mean(filt_EEG),preferences.epoch_size,1);
-                        end
-
-                        if preferences.detrend_epochs == 1
-                            filt_EEG = detrend(filt_EEG);
-                        end
+                    while(bd_idx < size(preferences.final_filters,2))
                         
-                        %epoch re-scaling option
-                        if(preferences.normalize_epochs == 1)
-                            filt_EEG  = (filt_EEG - min(filt_EEG))/(max(filt_EEG) - min(filt_EEG));
+                        if isnan(preferences.final_filters(ens,bd_idx)) == 0
+                            [myButter.b, myButter.a] = butter(4, [preferences.final_filters(ens,bd_idx) preferences.final_filters(ens,bd_idx+1)]/Nyq,'bandpass');
+                            [myButter.d, myButter.c] = iirnotch(Wo,BW);
+                            filt_EEG = filtfilt(myButter.b, myButter.a, EEG(:,ens));
+                            filt_EEG = filter(myButter.d, myButter.c, filt_EEG);
+
+                            if preferences.center_epochs == 1
+                                filt_EEG = filt_EEG - repmat(mean(filt_EEG),preferences.epoch_size,1);
+                            end
+
+                            if preferences.detrend_epochs == 1
+                                filt_EEG = detrend(filt_EEG);
+                            end
+
+                            %epoch re-scaling option
+                            if(preferences.normalize_epochs == 1)
+                                filt_EEG  = (filt_EEG - min(filt_EEG))/(max(filt_EEG) - min(filt_EEG));
+                            end
+
+                            X_trial = [X_trial, filt_EEG];
                         end
-                        
-                        X_trial = [X_trial, filt_EEG];
                         bd_idx = bd_idx + 2;
 
                     end

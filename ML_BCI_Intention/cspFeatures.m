@@ -1,4 +1,4 @@
-function [Feature_data] = cspFeatures(Data,CSP,nof,epoch_size,do_ratiovar)
+function [Feature_data] = cspFeatures(Data,CSP,nof,epoch_size,do_ratiovar,do_logvar)
 % CSPFEATURES - Returns Multi-CSP trained features
 %
 %   Get the final spatial filtered full training data using log-variance
@@ -9,8 +9,13 @@ function [Feature_data] = cspFeatures(Data,CSP,nof,epoch_size,do_ratiovar)
 %
 
 % Calculate numerator
-R_num_up = squeeze(var(reshape((Data.UP * CSP), epoch_size,[],2*nof))); 
-R_num_down = squeeze(var(reshape((Data.DOWN * CSP), epoch_size,[],2*nof))); 
+if do_logvar == 0
+    R_num_up = squeeze(var(reshape((Data.UP * CSP), epoch_size,[],2*nof))); 
+    R_num_down = squeeze(var(reshape((Data.DOWN * CSP), epoch_size,[],2*nof))); 
+else
+    R_num_up = squeeze(log(var(reshape((Data.UP * CSP), epoch_size,[],2*nof)))); 
+    R_num_down = squeeze(log(var(reshape((Data.DOWN * CSP), epoch_size,[],2*nof)))); 
+end
 
 % Calculate denominator
 R_den_up = sum(R_num_up,2);

@@ -1,4 +1,4 @@
-function [CSP,Feature_data] = cspTrain( epoch_size, nof, lambda, do_ratiovar, Data)
+function [CSP,Feature_data] = cspTrain( epoch_size, nof, lambda, do_ratiovar, Data, do_logvar)
 %   CSP Stationary Common Spatial Patterns following Christian Koethe's 
 %   implementation and the reference:
 %
@@ -59,7 +59,7 @@ CSP = V(:,[1:nof end-nof+1:end]);
 
 %% Estimate final features
 
-Feature_data = cspFeatures(Data,CSP,nof,epoch_size,do_ratiovar);
+Feature_data = cspFeatures(Data,CSP,nof,epoch_size,do_ratiovar,do_logvar);
 
 end
 

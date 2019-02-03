@@ -1,4 +1,4 @@
-function [FBCSP,final_filterbank,Feature_data] = fbcspTrain( epoch_size, nof, lambda,Data, K, ensemble_len, do_ratiovar )
+function [FBCSP,final_filterbank,Feature_data] = fbcspTrain( epoch_size, nof, lambda,Data, K, ensemble_len, do_ratiovar, do_logvar, showPlots)
 %   FBsCSP Filter Bank stationary Common Spatial Patterns. Selects the K
 %   best spatial filters. Filter selection is done using LDA on each filter (wrapper 
 %   approach). Uses the sCSP approach to correct for non stationarities in
@@ -73,7 +73,7 @@ for band_idx= 0:ensemble_len:size(X_up,2)-1
 end
 
 
-%   Calculate mutual information between up/down trials on each individual
+%   Calculate LDA accuracy for up/down trials on each individual
 %   CSP feature
 I = []; %Initialize accuracies vector
 i = 1;
@@ -110,7 +110,7 @@ end
 [~,sort_idx] = sort(I,'descend');
 
 %   Select the first K features for the final feature vector based on the
-%   features with higher mutual information computed on the full CSP matrix
+%   features with higher LDA accuracy computed on the full CSP matrix
 final_filterbank = [];
 
 for k = 1:K
@@ -120,13 +120,99 @@ for k = 1:K
 end
 
 % Get our final filterbank and chosen vector with sorted filters
-final_filterbank = unique(final_filterbank);
+final_filterbank = sort(final_filterbank);
 FBCSP = CSP(:,final_filterbank);
 
 
 %% Feature retrieval
 
-Feature_data = fbcspFeatures(Data,FBCSP,final_filterbank,nof,epoch_size,do_ratiovar);
+Feature_data = fbcspFeatures(Data,FBCSP,final_filterbank,nof,epoch_size,do_ratiovar,do_logvar);
 
+%Plot projected data
+if showPlots
+    
+    for i = 1:K-1
+
+        % Get the bands
+        band1 = floor(final_filterbank(i)/(nof*2))+1;
+        if final_filterbank(i+1) == (nof*2)*nob
+            band2 = nob;
+        else
+            band2 = floor(final_filterbank(i+1)/(nof*2))+1;
+        end
+
+        % Get filter number
+        filter1 = rem(final_filterbank(i),nof*2);
+        if filter1 == 0
+            filter1 = nof*2;
+        end
+        filter2 = rem(final_filterbank(i+1),nof*2);
+        if filter2 == 0
+            filter2 = nof*2;
+        end    
+        
+        % Plot FBCSP feature pairs
+        figure
+        subplot(1,2,1)
+        plot(Feature_data.UP(:,i),Feature_data.UP(:,i+1),'b.')
+        hold on
+        plot(Feature_data.DOWN(:,i),Feature_data.DOWN(:,i+1),'r.')
+        hold off
+        title('FBCSP features')
+        xlabel(['Filter ' num2str(filter1) ' of band ' num2str(band1)]);
+        ylabel(['Filter ' num2str(filter2) ' of band ' num2str(band2)]);
+        legend('UP epochs','DOWN epochs');
+        subplot(1,4,3)
+        boxplot([Feature_data.UP(:,i),Feature_data.UP(:,i+1)])
+        title(['Feature distribution for UP epochs'])
+        xlabel('FBCSP feature')
+        ylim([0.2 1.6])
+        subplot(1,4,4)
+        boxplot([Feature_data.DOWN(:,i),Feature_data.DOWN(:,i+1)])
+        title(['Feature distribution for DOWN epochs'])
+        xlabel('FBCSP feature')
+        ylim([0.2 1.6])
+        
+        % Plot boxplot of original band1 distributions and variance
+        figure
+        cols1 = (band1-1)*ensemble_len + 1: (band1-1)*ensemble_len + ensemble_len;
+        dataBand1Up = X_up(:,cols1);
+        dataBand1Down = X_down(:,cols1);
+        featureUp = squeeze(log(var(reshape(dataBand1Up, epoch_size,[],size(dataBand1Up,2))))); 
+        featureDown = squeeze(log(var(reshape(dataBand1Down, epoch_size,[],size(dataBand1Down,2)))));
+        subplot(2,2,1)
+        boxplot(featureUp)
+        title(['Band ' num2str(band1) ' log variance for UP epochs'])
+        xlabel('Channels')
+        ylabel('log var')
+        ylim([-28 -23])
+        subplot(2,2,2)
+        boxplot(featureDown)
+        title(['Band ' num2str(band1) ' log variance for DOWN epochs'])
+        xlabel('Channels')
+        ylabel('log var')
+        ylim([-28 -23])
+        cols2 = (band2-1)*ensemble_len + 1: (band2-1)*ensemble_len + ensemble_len;
+        dataBand2Up = X_up(:,cols2);
+        dataBand2Down = X_down(:,cols2);
+        featureUp = squeeze(log(var(reshape(dataBand2Up, epoch_size,[],size(dataBand2Up,2))))); 
+        featureDown = squeeze(log(var(reshape(dataBand2Down, epoch_size,[],size(dataBand2Down,2)))));
+        subplot(2,2,3)
+        boxplot(featureUp)
+        title(['Band ' num2str(band2) ' log variance for UP epochs'])
+        xlabel('Channels')
+        ylabel('log var')
+        ylim([-28 -23])
+        subplot(2,2,4)
+        boxplot(featureDown)
+        title(['Band ' num2str(band2) ' log variance for DOWN epochs'])
+        xlabel('Channels')
+        ylabel('log var')
+        ylim([-28 -23])
+        
+        pause
+        close all
+    end
+    
 end
 

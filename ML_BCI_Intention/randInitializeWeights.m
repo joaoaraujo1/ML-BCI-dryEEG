@@ -1,4 +1,4 @@
-function W = randInitializeWeights(L_in, L_out)
+function W = randInitializeWeights(L_in, L_out, w_init)
 %RANDINITIALIZEWEIGHTS Randomly initialize the weights of a layer with L_in
 %incoming connections and L_out outgoing connections
 %   W = RANDINITIALIZEWEIGHTS(L_in, L_out) randomly initializes the weights 
@@ -12,17 +12,17 @@ function W = randInitializeWeights(L_in, L_out)
 % You need to return the following variables correctly 
 W = zeros(L_out, 1 + L_in);
 
-% ====================== YOUR CODE HERE ======================
-% Instructions: Initialize W randomly so that we break the symmetry while
-%               training the neural network.
-%
-% Note: The first column of W corresponds to the parameters for the bias unit
-%
 % Randomly initialize the weights to small values
-% epsilon_init = 0.12;
-% Using epsilon values according to the expression in the ex4
-epsilon_init = sqrt(6) / sqrt(L_in + L_out);
-W = rand(L_out, 1 + L_in) * 2 * epsilon_init - epsilon_init;
+if w_init == 0% Using epsilon values according to the expression in the ex4 of ML course
+    epsilon_init = sqrt(6) / sqrt(L_in + L_out);
+    W = rand(L_out, 1 + L_in) * 2 * epsilon_init - epsilon_init;
+elseif w_init == 1 % Using Andew Ng's DL initialization
+    W = randn(L_out, 1 + L_in) * 0.01;
+elseif w_init == 2 % heuristic for ReLU units
+    W = randn(L_out, 1 + L_in) * sqrt(2/L_in);
+elseif w_init == 3 % Xavier - heuristic for tanh
+    W = randn(L_out, 1 + L_in) * sqrt(1/(L_in + L_out));
+end
 
 
 

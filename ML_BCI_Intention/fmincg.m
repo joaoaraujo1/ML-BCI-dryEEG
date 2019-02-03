@@ -80,12 +80,28 @@ s = -df1;                                        % search direction is steepest
 d1 = -s'*s;                                                 % this is the slope
 z1 = red/(1-d1);                                  % initial step is red/(|s|+1)
 
+% JOAO
+f2 = 0;
+
 while i < abs(length)                                      % while not finished
-  i = i + (length>0);                                      % count iterations?!
+      i = i + (length>0);                                      % count iterations?!
 
   X0 = X; f0 = f1; df0 = df1;                   % make a copy of current values
   X = X + z1*s;                                             % begin line search
+  
+  %JOAO - NAN CONTROL
+  if f2 ~= 0
+      f2_prev = f2; df2_prev = df2;
+  end
   [f2 df2] = eval(argstr);
+  if isnan(f2) %Nan exception
+    fprintf('Training stopped due to NaN exception in iteration %4i\r',i);
+    i = abs(length);
+    success = 0;
+    f2 = f2_prev; df2 = df2_prev;
+    break
+  end
+  
   i = i + (length<0);                                          % count epochs?!
   d2 = df2'*s;
   f3 = f1; d3 = d1; z3 = -z1;             % initialize point 3 equal to point 1
@@ -107,7 +123,18 @@ while i < abs(length)                                      % while not finished
       z2 = max(min(z2, INT*z3),(1-INT)*z3);  % don't accept too close to limits
       z1 = z1 + z2;                                           % update the step
       X = X + z2*s;
+      
+      % JOAO - NAN CONTROL
+      f2_prev = f2; df2_prev = df2;
       [f2 df2] = eval(argstr);
+      if isnan(f2) %Nan exception
+        fprintf('Training stopped due to NaN exception in iteration %4i\r',i);
+        i = abs(length);
+        success = 0;
+        f2 = f2_prev; df2 = df2_prev;
+        break
+      end
+   
       M = M - 1; i = i + (length<0);                           % count epochs?!
       d2 = df2'*s;
       z3 = z3-z2;                    % z3 is now relative to the location of z2
@@ -146,7 +173,11 @@ while i < abs(length)                                      % while not finished
 
   if success                                         % if line search succeeded
     f1 = f2; fX = [fX' f1]';
-    %fprintf('%s %4i | Cost: %4.6e\r', S, i, f1);
+    
+    %JOAO - PRINT ONLY IN A CERTAIN INTERVAL
+    if rem(i,options.PrintInterval) == 0
+        fprintf('%s %4i | Cost: %4.6e\r', S, i, f1);
+    end
     s = (df2'*df2-df1'*df2)/(df1'*df1)*s - df2;      % Polack-Ribiere direction
     tmp = df1; df1 = df2; df2 = tmp;                         % swap derivatives
     d2 = df1'*s;
@@ -172,4 +203,4 @@ while i < abs(length)                                      % while not finished
     fflush(stdout);
   end
 end
-%fprintf('\n');
+    %fprintf('\n');
